@@ -1,0 +1,25 @@
+from rest_framework import generics
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from ..pagination import StandardResultsSetPagination
+from ..models import Vehicle
+from ..serializers import VehicleSerializer
+
+
+class VehicleList(generics.ListCreateAPIView):
+    queryset = Vehicle.objects.all()
+    serializer_class = VehicleSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filterset_fields = ['branch']
+    search_fields = search_fields = ['vehicle_code', 'vehicle_model', 'manufacturer', 'color', 'wheel_num', 'transmission_type', 'status']
+    ordering_fields = '__all__'
+    ordering = 'vehicle_code'
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+class VehicleDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Vehicle.objects.all()
+    serializer_class = VehicleSerializer
+    lookup_field = 'vehicle_code'

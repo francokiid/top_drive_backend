@@ -1,0 +1,67 @@
+from datetime import datetime
+from ....models import Session
+from ..utils import get_instructor_utilization
+
+
+def get_available_instructors(session_date, start_time, end_time):
+    # GET BUSY INSTRUCTORS FOR THE GIVEN DATE, TIME, AND BRANCH
+    busy_instructors = Session.objects.filter(
+        session_date=session_date,
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+        status__in=['Completed', 'Scheduled']
+    ).exclude(instructor__status='Archived').values_list('instructor__instructor_code', flat=True)
+
+    # FORMAT DATE
+    if isinstance(session_date, str):
+        session_date = datetime.strptime(session_date, '%Y-%m-%d')
+
+    # FETCH INSTRUCTOR UTILIZATION DATA BASED ON BRANCH AND DATE
+    instructor_data = get_instructor_utilization(end_date=session_date)
+
+    available_instructors = [
+        instructor for instructor in instructor_data.get('instructors', [])
+        if instructor['instructorCode'] not in busy_instructors
+    ]
+
+    return available_instructors
+
+
+def get_recommended_instructors(category, session_date, start_time, end_time, branch, session_nth, last_session):
+    # GET AVAILABLE INSTRUCTORS FOR THE GIVEN DATE AND TIME
+    available_instructors = get_available_instructors(session_date, start_time, end_time)
+
+    # SEPARATE INSTRUCTORS BY SENIOR AND REGULAR
+    senior_instructors = []
+    remaining_instructors = []
+    recommended_instructors = []
+    
+    for instructor in available_instructors:
+        instructor_info = {
+            'instructorCode': instructor['instructorCode'],
+            'instructorName': instructor['instructorName'],
+            'branchName': instructor['instructorName'].split(" / ")[-1]
+        }
+        recommended_instructors.append(instructor_info)
+        if "SR" in instructor['instructorName']:
+            senior_instructors.append(instructor_info)
+        else:
+            remaining_instructors.append(instructor_info)
+
+    # PRIORITIZE SENIOR INSTRUCTORS IF FIRST OR LAST SESSION
+    if (category == 'PDC') and (session_nth == 1 or session_nth == last_session):
+        recommended_instructors = []
+        recommended_instructors = senior_instructors + remaining_instructors
+
+    # FILTER INSTRUCTORS FROM SPECIFIED BRANCH
+    branch_instructors = [instructor for instructor in recommended_instructors if instructor['branchName'] == branch]
+    
+    # FALLBACK TO MAIN BRANCH IF NO INSTRUCTORS FOUND FOR SPECIFIED BRANCH
+    if not branch_instructors:
+        branch_instructors = [instructor for instructor in recommended_instructors if instructor['branchName'] == 'Main']
+
+    # CONSOLIDATE LIST OF INSTRUCTORS, PRIORITIZING THOSE FROM SPECIFIED BRANCH
+    other_instructors = [instructor for instructor in recommended_instructors if instructor not in branch_instructors]
+    final_instructors = branch_instructors + other_instructors
+
+    return final_instructors

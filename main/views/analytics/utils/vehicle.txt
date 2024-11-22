@@ -1,0 +1,89 @@
+def get_vehicle_utilization(branch=None, start_date=None, end_date=None):
+    TRANSMISSION_MAP = {
+        'Manual Transmission': 'MT',
+        'Automatic Transmission': 'AT',
+    }
+    
+    # GET DATE RANGE AND DEFAULT TO CURRENT WEEK IF NO DATES ARE PROVIDED
+    start_date, end_date = calculate_date_range(start_date, end_date)
+
+    # FETCH VEHICLES WITH BRANCH NAME
+    if branch:
+        vehicles = Vehicle.objects.exclude(status__in=['Archived', 'Unavailable']).filter(branch=branch).values('vehicle_code', 'vehicle_model', 'color', 'transmission_type', 'wheel_num', 'branch__branch_name')
+        if not vehicles:
+            vehicles = Vehicle.objects.exclude(status__in=['Archived', 'Unavailable']).filter(branch='Main').values('vehicle_code', 'vehicle_model', 'color', 'transmission_type', 'wheel_num', 'branch__branch_name')
+    else:
+        vehicles = Vehicle.objects.exclude(status__in=['Archived', 'Unavailable']).values('vehicle_code', 'vehicle_model', 'color', 'transmission_type', 'wheel_num', 'branch__branch_name')
+
+    # FETCH SESSIONS AND FILTER BY BRANCH AND DATE RANGE
+    sessions = Session.objects.exclude(status__in=['Archived', 'Unavailable']).filter(session_date__range=[start_date, end_date])
+    if branch:
+        sessions = sessions.filter(enrollment__branch=branch)
+    
+    # CONVERT TO DATAFRAMES
+    df_vehicles = read_frame(vehicles)
+    if sessions.exists():
+        df_sessions = read_frame(sessions.values(
+            'facility__object_id', 'start_time', 'end_time', 'session_date', 'enrollment__course__course_category__category_type'
+        ))
+
+        # REMOVE DUPLICATES BASED ON SESSION DATE, START TIME, AND END TIME
+        df_sessions = df_sessions.drop_duplicates(subset=['facility__object_id', 'session_date', 'start_time', 'end_time'])
+
+        # CREATE DATETIME COLUMNS
+        df_sessions['start_datetime'] = pd.to_datetime(df_sessions['session_date'].astype(str) + ' ' + df_sessions['start_time'].astype(str))
+        df_sessions['end_datetime'] = pd.to_datetime(df_sessions['session_date'].astype(str) + ' ' + df_sessions['end_time'].astype(str))
+
+        # SET SESSION DURATION BASED ON COURSE CATEGORY TYPE
+        df_sessions['duration'] = df_sessions['enrollment__course__course_category__category_type'].apply(
+            lambda x: 2.0 if x == 'PDC' else (7.5 if x == 'TDC' else 0)
+        )
+
+        # AGGREGATE AND CALCULATE TOTAL HOURS ASSIGNED
+        utilization = df_sessions.groupby('facility__object_id')['duration'].sum().reset_index()
+        utilization.columns = ['vehicle_code', 'hoursAssigned']
+    else:
+        utilization = pd.DataFrame(columns=['vehicle_code', 'hoursAssigned'])
+
+    utilization = pd.merge(df_vehicles, utilization, left_on='vehicle_code', right_on='vehicle_code', how='left')
+    
+    utilization['hoursAssigned'] = utilization['hoursAssigned'].fillna(0).infer_objects(copy=False)
+
+    # CALCULATE TOTAL HOURS AVAILABLE
+    total_days = (end_date - start_date).days + 1
+    hours_available_per_vehicle = total_days * 8
+
+    # ADD TOTAL HOURS AVAILABLE FOR EACH VEHICLE
+    utilization['hoursAvailable'] = hours_available_per_vehicle
+
+    # CALCULATE UTILIZATION RATE
+    utilization['utilizationRate'] = (utilization['hoursAssigned'] / utilization['hoursAvailable'] * 100).round(2)
+
+    # SORT VEHICLES BY UTILIZATION RATE
+    utilization = utilization.sort_values(by='utilizationRate', ascending=True)
+
+    # OVERALL UTILIZATION
+    total_hours_assigned = utilization['hoursAssigned'].sum()
+    total_hours_available = len(df_vehicles) * hours_available_per_vehicle
+    overall_utilization_rate = (total_hours_assigned / total_hours_available * 100).round(2)
+
+    # FORMAT RESPONSE DATA
+    utilization_data = utilization[['vehicle_code', 'vehicle_model', 'color', 'transmission_type', 'wheel_num', 'hoursAvailable', 'hoursAssigned', 'utilizationRate', 'branch__branch_name']]
+    utilization_data.loc[:, 'vehicleName'] = utilization_data.apply(
+        lambda row: f"{row['vehicle_model']} {TRANSMISSION_MAP.get(row['transmission_type'], row['transmission_type'])} {row['color']} / {row['branch__branch_name']}",
+        axis=1
+    )
+    
+    utilization_data = utilization_data.drop(columns=['vehicle_model', 'color', 'branch__branch_name'])
+    utilization_data = utilization_data.rename(columns={
+        'vehicle_code': 'vehicleCode',
+        'transmission_type': 'transmissionType',
+        'wheel_num': 'wheelNum'
+    }).to_dict(orient='records')
+
+    return {
+        "overallUtilizationRate": overall_utilization_rate,
+        "totalHoursAssigned": total_hours_assigned,
+        "totalHoursAvailable": total_hours_available,
+        "vehicles": utilization_data
+    }
