@@ -14,10 +14,12 @@ urlpatterns = [
     # Branch URLs
     path('branches/', views.BranchList.as_view(), name='branch-list'),
     path('branches/<str:branch_name>/', views.BranchDetail.as_view(), name='branch-detail'),
+    path('valid-branches/', views.ValidBranchList.as_view(), name='valid-branch-list'),
 
     # Course URLs
     path('courses/', views.CourseList.as_view(), name='course-list'),
     path('courses/<str:course_code>/', views.CourseDetail.as_view(), name='course-detail'),
+    path('valid-courses/', views.ValidCourseList.as_view(), name='valid-course-list'),
 
     # Course Category URLs
     path('course-categories/', views.CourseCategoryList.as_view(), name='course-category-list'),

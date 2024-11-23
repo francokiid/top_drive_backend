@@ -9,7 +9,7 @@ class ResourceStats(APIView):
         branch = request.query_params.get('branch', None)
 
         # FILTER RESOURCES BY BRANCH
-        instructors = Instructor.objects.filter(status="Active")
+        instructors = Instructor.objects.exclude(status__in=['Archived', 'Inactive'])
         classrooms = Classroom.objects.filter(status="Available")
         vehicles = Vehicle.objects.filter(status="Available")
 

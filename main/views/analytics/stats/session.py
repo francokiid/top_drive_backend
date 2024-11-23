@@ -1,8 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from django_pandas.io import read_frame
-from django.db.models import Count
 import pandas as pd
 from datetime import datetime
 from ....models import Session
@@ -19,7 +17,7 @@ class SessionTrends(APIView):
             start_date = datetime(datetime.now().year, 1, 1).date()
 
         # LOAD DATA INTO A DATAFRAME
-        sessions = Session.objects.exclude(status='Archived')
+        sessions = Session.objects.exclude(status__in=['Archived', 'Cancelled'])
         
         # FILTER SESSIONS BASED ON BRANCH AND DATE RANGE
         sessions = sessions.filter(session_date__gte=start_date)

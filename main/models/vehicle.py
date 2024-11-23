@@ -1,10 +1,7 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from datetime import datetime
-from random import randint
+from django.contrib.contenttypes.models import ContentType
 from .branch import Branch
 from .facility import Facility
-from django.contrib.contenttypes.models import ContentType
 
 class Vehicle(models.Model):
     WHEEL_NUM_CHOICES = [
@@ -45,12 +42,14 @@ class Vehicle(models.Model):
 
         prefix = prefix_map.get((self.transmission_type, self.wheel_num), 'UNK')
 
-        while True:
-            unique_id = randint(100, 999)
-            new_code = f'{prefix}-{unique_id}'
-            if not Vehicle.objects.filter(vehicle_code=new_code).exists():
-                self.vehicle_code = new_code
-            break
+        existing_codes = Vehicle.objects.filter(vehicle_code__startswith=prefix).values_list('vehicle_code', flat=True)
+        numeric_suffixes = [
+            int(code.split('-')[1]) for code in existing_codes if code.split('-')[1].isdigit()
+        ]
+
+        next_number = max(numeric_suffixes, default=0) + 1
+
+        self.vehicle_code = f'{prefix}-{next_number:03}'
 
     def save(self, *args, **kwargs):
         if not self.vehicle_code:
@@ -68,4 +67,3 @@ class Vehicle(models.Model):
 
     def __str__(self):
         return f"{self.vehicle_model} {self.transmission_type} {self.color} / {self.branch.branch_name}"
-    

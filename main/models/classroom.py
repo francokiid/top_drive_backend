@@ -1,9 +1,7 @@
 from django.db import models
 from .branch import Branch
 from .facility import Facility
-from random import randint
 from django.contrib.contenttypes.models import ContentType
-
 
 class Classroom(models.Model):
     STATUS_CHOICES = [
@@ -19,12 +17,12 @@ class Classroom(models.Model):
 
     def generate_unique_classroom_code(self):
         prefix = "RM"
-        while True:
-            unique_id = randint(100, 999)
-            new_code = f'{prefix}-{unique_id}'
-            if not Classroom.objects.filter(classroom_code=new_code).exists():
-                self.classroom_code = new_code
-                break
+        existing_codes = Classroom.objects.filter(classroom_code__startswith=prefix).values_list('classroom_code', flat=True)
+        numeric_parts = [
+            int(code.split('-')[1]) for code in existing_codes if code.split('-')[1].isdigit()
+        ]
+        next_number = max(numeric_parts, default=100) + 1
+        self.classroom_code = f'{prefix}-{next_number}'
 
     def save(self, *args, **kwargs):
         if not self.classroom_code:
@@ -39,6 +37,6 @@ class Classroom(models.Model):
     def delete(self, *args, **kwargs):
         Facility.objects.filter(content_type=ContentType.objects.get_for_model(self), object_id=self.classroom_code).delete()
         super(Classroom, self).delete(*args, **kwargs)
-      
+
     def __str__(self):
         return f'{self.classroom_code} / {self.branch.branch_name}'

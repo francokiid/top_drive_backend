@@ -81,7 +81,6 @@ class StudentDetail(generics.RetrieveUpdateDestroyAPIView):
             instance.user = user
             instance.save()
 
-        # Proceed to update the Student instance
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -103,9 +102,9 @@ class EnrollStudent(APIView):
         preferred_dates = request.data.get('preferred_dates', [])
         remarks = request.data.get('remarks', '')
         first_name = request.data.get('first_name')
-        last_name = request.data.get('last_name')
+        last_name = request.data.get('last_name', '')
 
-        if not all([branch_id, course_id, transmission_type, total_hours, first_name, last_name]):
+        if not all([branch_id, course_id, transmission_type, total_hours, first_name]):
             return Response({'error': "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -154,11 +153,12 @@ class EnrollStudent(APIView):
         except Exception as e:
             return Response({'error': f'Error enrolling student: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class StudentEnrollments(APIView):
     def get(self, request, identifier, *args, **kwargs):
 
         try:
-            if '@' in identifier:  # Check if it's an email
+            if '@' in identifier:
                 user = User.objects.get(email=identifier)
                 student = user.student
             else:

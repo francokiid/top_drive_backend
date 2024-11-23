@@ -10,7 +10,7 @@ class InstructorUtilization(APIView):
             branch = request.query_params.get('branch')
             start_date_str = request.query_params.get('start_date')
             end_date_str = request.query_params.get('end_date')
-            instructor_code = request.query_params.get('instructor')  # New filter parameter
+            instructor_code = request.query_params.get('instructor')
 
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None

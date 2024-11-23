@@ -20,7 +20,7 @@ class EnrollmentTrends(APIView):
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
 
         # FETCH DATA FROM DATABASE
-        enrollments = Enrollment.objects.exclude(status='Archived')
+        enrollments = Enrollment.objects.exclude(status__in=['Archived', 'Cancelled'])
 
         # FILTER ENROLLMENTS BASED ON BRANCH AND DATE RANGE
         if branch:
