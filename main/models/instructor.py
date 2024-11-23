@@ -1,7 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
-from random import randint
 from datetime import datetime
 from .branch import Branch
 
@@ -23,7 +21,7 @@ class Instructor(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.instructor_code:
-            self.generate_unique_instructor_code()
+            self.generate_auto_instructor_code()
         
         if self.user:
             self.user.first_name = self.first_name
@@ -32,14 +30,22 @@ class Instructor(models.Model):
 
         super().save(*args, **kwargs)
 
-    def generate_unique_instructor_code(self):
-        prefix = "INS"
-        while True:
-            unique_id = randint(1000, 9999)
-            new_code = f'{prefix}-{unique_id}'
-            if not Instructor.objects.filter(instructor_code=new_code).exists():
-                self.instructor_code = new_code
-                break
+    def generate_auto_instructor_code(self):
+        prefix = "INS-"
+        last_code = (
+            Instructor.objects.filter(instructor_code__startswith=prefix)
+            .order_by("-instructor_code")
+            .values_list("instructor_code", flat=True)
+            .first()
+        )
+
+        if last_code:
+            last_number = int(last_code.replace(prefix, ""))
+            new_number = last_number + 1
+        else:
+            new_number = 1
+
+        self.instructor_code = f"{prefix}{new_number:04d}"
 
     def __str__(self):
-        return f"{self.instructor_code}"
+        return self.instructor_code

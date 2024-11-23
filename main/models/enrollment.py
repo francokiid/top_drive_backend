@@ -23,7 +23,7 @@ class Enrollment(models.Model):
         ('NA', 'NA'),
     ]
 
-    enrollment_id = models.CharField(max_length=6, primary_key=True, editable=False)  # Changed to CharField
+    enrollment_id = models.CharField(max_length=6, primary_key=True, editable=False)
     enrollment_date = models.DateField(default=timezone.now)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
