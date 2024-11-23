@@ -24,6 +24,7 @@ class InstructorList(generics.ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
+
 class InstructorDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Instructor.objects.exclude(status='Archived')
     serializer_class = InstructorSerializer

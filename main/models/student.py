@@ -6,13 +6,12 @@ from django.utils.timezone import now
 class Student(models.Model):
     STATUS_CHOICES = [
         ('Active', 'Active'),
-        ('Inactive', 'Inactive'),
         ('Archived', 'Archived')
     ]
 
     student_code = models.CharField(max_length=10, primary_key=True, editable=False)
     first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255, null=True, blank=True)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, 
         null=True, 

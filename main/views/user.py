@@ -26,15 +26,21 @@ class UserList(generics.ListCreateAPIView):
 
     def get_queryset(self):
         condition = self.request.query_params.get('condition', 'all')
+        role = self.request.query_params.get('role', None)
+
+        queryset = User.objects.all()
 
         if condition == 'no_association':
-            return User.objects.filter(role='Student').exclude(
+            queryset = queryset.filter(role='Student').exclude(
                 student__isnull=False
             ).exclude(
                 instructor__isnull=False
             )
-        else:
-            return User.objects.all()
+
+        if role:
+            queryset = queryset.filter(role=role)
+
+        return queryset
 
 class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
