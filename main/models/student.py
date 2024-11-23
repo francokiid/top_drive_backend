@@ -35,7 +35,7 @@ class Student(models.Model):
     def generate_unique_student_code(self):
         year = str(self.year_joined)[-2:]
         while True:
-            unique_id = randint(10000, 99999)
+            unique_id = randint(100000, 999999)
             new_code = f'{year}-{unique_id}'
             if not Student.objects.filter(student_code=new_code).exists():
                 self.student_code = new_code
