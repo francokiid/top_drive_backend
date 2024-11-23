@@ -14,7 +14,7 @@ class SessionList(generics.ListCreateAPIView):
     serializer_class = SessionSerializer
     pagination_class = LargeResultsSetPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
-    filterset_fields = ['status', 'session_date']
+    filterset_fields = ['status', 'session_date', 'instructor']
     search_fields = ['session_id', 'session_nth', 'session_date', 'status', 
                      'enrollment__course__course_name', 'enrollment__student__student_code', 'enrollment__student__first_name',
                      'instructor__instructor_code', 'instructor__first_name', 'facility__object_id'

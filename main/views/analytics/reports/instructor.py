@@ -4,18 +4,18 @@ from rest_framework.response import Response
 from datetime import datetime
 from ..utils import get_instructor_utilization
 
-
 class InstructorUtilization(APIView):
     def get(self, request):
         try:
             branch = request.query_params.get('branch')
             start_date_str = request.query_params.get('start_date')
             end_date_str = request.query_params.get('end_date')
+            instructor_code = request.query_params.get('instructor')  # New filter parameter
 
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
 
-            data = get_instructor_utilization(branch, start_date, end_date)
+            data = get_instructor_utilization(branch, start_date, end_date, instructor_code)
             return Response(data, status=status.HTTP_200_OK)
 
         except ValueError:

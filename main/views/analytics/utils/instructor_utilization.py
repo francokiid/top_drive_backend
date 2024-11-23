@@ -4,21 +4,22 @@ from ....models import Session, Instructor
 from . import calculate_date_range
 
 
-def get_instructor_utilization(branch=None, start_date=None, end_date=None):
+def get_instructor_utilization(branch=None, start_date=None, end_date=None, instructor_code=None):
     # GET DATE RANGE AND DEFAULT TO CURRENT WEEK IF NO DATES ARE PROVIDED
     start_date, end_date = calculate_date_range(start_date, end_date)
 
-    # FETCH INSTRUCTORS WITH BRANCH NAME
+    # FETCH INSTRUCTORS WITH BRANCH NAME AND FILTER BY INSTRUCTOR CODE IF PROVIDED
+    instructors = Instructor.objects.exclude(status__in=['Archived', 'Inactive'])
+
     if branch:
-        instructors = Instructor.objects.exclude(status__in=['Archived', 'Inactive']).filter(branch=branch).values(
-            'instructor_code', 'first_name', 'is_senior', 'branch__branch_name'
-        )
-        if not instructors:
-            instructors = Instructor.objects.exclude(status__in=['Archived', 'Inactive']).filter(branch__branch_name="Main").values(
-                'instructor_code', 'first_name', 'is_senior', 'branch__branch_name'
-        )
-    else:
-        instructors = Instructor.objects.exclude(status__in=['Archived', 'Inactive']).values(
+        instructors = instructors.filter(branch=branch)
+    if instructor_code:
+        instructors = instructors.filter(instructor_code=instructor_code)  # Filter by instructor_code if provided
+
+    instructors = instructors.values('instructor_code', 'first_name', 'is_senior', 'branch__branch_name')
+
+    if not instructors:
+        instructors = Instructor.objects.exclude(status__in=['Archived', 'Inactive']).filter(branch__branch_name="Main").values(
             'instructor_code', 'first_name', 'is_senior', 'branch__branch_name'
         )
 
