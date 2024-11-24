@@ -26,7 +26,7 @@ class StudentList(generics.ListCreateAPIView):
     filterset_class = EnrollmentFilter
     search_fields = ['student_code', 'first_name', 'last_name', 'year_joined']
     ordering_fields = '__all__'
-    ordering = 'student_code'
+    ordering = 'first_name'
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
