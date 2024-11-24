@@ -23,7 +23,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     'https://top-drive-frontend.onrender.com',
-    'https://www.topdrivedrivinginstitute.com/',
+    'https://www.topdrivedrivinginstitute.com',
 ]
 
 STORAGES = {
