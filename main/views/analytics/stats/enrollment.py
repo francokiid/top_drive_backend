@@ -21,7 +21,6 @@ class EnrollmentTrends(APIView):
         
         # FETCH DATA FROM DATABASE
         enrollments = Enrollment.objects.exclude(status__in=['Archived', 'Forfeited'])
-        print(enrollments)
 
         # FILTER ENROLLMENTS BASED ON BRANCH AND DATE RANGE
         enrollments = enrollments.filter(enrollment_date__gte=start_date)
