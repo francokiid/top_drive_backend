@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from django.db import transaction
+from django.db.models import Max
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from ..pagination import StandardResultsSetPagination
@@ -11,7 +12,7 @@ from ..serializers import StudentSerializer, UserSerializer
 import django_filters
 
 
-class EnrollmentFilter(django_filters.FilterSet):
+class StudentFilter(django_filters.FilterSet):
     branch = django_filters.CharFilter('enrollment__branch__branch_name')
 
     class Meta:
@@ -19,14 +20,16 @@ class EnrollmentFilter(django_filters.FilterSet):
         fields = ['status', 'branch']
 
 class StudentList(generics.ListCreateAPIView):
-    queryset = Student.objects.exclude(status='Archived')
+    queryset = Student.objects.exclude(status='Archived').annotate(
+        enrollment_date=Max('enrollment__enrollment_date')
+    )
     serializer_class = StudentSerializer
     pagination_class = StandardResultsSetPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
-    filterset_class = EnrollmentFilter
+    filterset_class = StudentFilter
     search_fields = ['student_code', 'first_name', 'last_name', 'year_joined']
     ordering_fields = '__all__'
-    ordering = 'first_name'
+    ordering = '-enrollment_date'
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -173,3 +176,15 @@ class StudentEnrollments(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
 
+# class StudentList(generics.ListCreateAPIView):
+#     queryset = Student.objects.exclude(status='Archived')
+#     serializer_class = StudentSerializer
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+#     filterset_class = StudentFilter
+#     search_fields = ['student_code', 'first_name', 'last_name', 'year_joined']
+#     ordering_fields = '__all__'
+#     ordering = 'enrollment__enrollment_date'
+
+#     def get(self, request, *args, **kwargs):
+#         return self.list(request, *args, **kwargs)

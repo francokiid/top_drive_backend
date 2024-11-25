@@ -89,6 +89,9 @@ class SessionTrends(APIView):
         if branch:
             sessions = sessions.filter(enrollment__branch=branch)
 
+        # COUNT SCHEDULES WITH "SCHEDULED" STATUS
+        scheduled_count = Session.objects.filter(status='Scheduled').count()
+
         # CONVERT DATA TO DATAFRAME
         df_sessions = read_frame(sessions, fieldnames=['session_date', 'start_time', 'status', 'enrollment__course__course_category__category_code'])
 
@@ -105,6 +108,7 @@ class SessionTrends(APIView):
                 'timePeriodStats': [],
                 'statusStats': [],
                 'courseCategoryStats': {},
+                'scheduledCount': 0,
             })
 
         # CATEGORIZE SESSIONS BY TIME PERIOD
@@ -145,6 +149,7 @@ class SessionTrends(APIView):
             'timePeriodStats': time_period_stats,
             'statusStats': status_stats,
             'courseCategoryStats': course_category_stats,
+            'scheduledCount': scheduled_count,
         })
 
     @staticmethod
