@@ -12,7 +12,7 @@ class ClassroomList(generics.ListCreateAPIView):
     pagination_class = StandardResultsSetPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_fields = ['branch']
-    search_fields = search_fields = ['classroom_code', 'capacity', 'branch', 'status']
+    search_fields = ['classroom_code', 'capacity', 'status']
     ordering_fields = '__all__'
     ordering = 'classroom_code'
     
