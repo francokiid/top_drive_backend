@@ -61,6 +61,7 @@ urlpatterns = [
     # Analytics
     path('enrollment-trends/', views.EnrollmentTrends.as_view(), name='enrollment-trends'),
     path('resource-stats/', views.ResourceStats.as_view(), name='resource-stats'),
+    path('sessions-over-time/', views.MonthlyAndDailyStats.as_view(), name='session-over-time'),
     path('session-trends/', views.SessionTrends.as_view(), name='session-trends'),
     path('classroom-utilization/', views.ClassroomUtilization.as_view(), name='classroom-utilization'),
     path('instructor-utilization/', views.InstructorUtilization.as_view(), name='instructor-utilization'),

@@ -43,8 +43,8 @@ class EnrollmentTrends(APIView):
 
         if total_enrollments == 0:
             return Response({
-                'courseStats': [],
-                'courseCategoryStats': [],
+                'courseStats': [], 
+                'courseCategoryStats': [], 
                 'branchStats': []
             })
 
@@ -54,14 +54,14 @@ class EnrollmentTrends(APIView):
             .size().reset_index(name='count')
             .rename(columns={'course__course_category': 'name'})
         )
-        course_category_stats['percentage'] = course_category_stats['count'] / total_enrollments * 100
+        course_category_stats['percentage'] = (course_category_stats['count'] / total_enrollments * 100).astype(int)
         course_category_stats = course_category_stats[['name', 'count', 'percentage']].to_dict(orient='records')
 
         # COURSE STATS
         course_stats = {}
         for course_category, group in df_enrollments.groupby('course__course_category'):
             stats = group['course'].value_counts().reset_index(name='count').rename(columns={'course': 'name'})
-            stats['percentage'] = stats['count'] / total_enrollments * 100
+            stats['percentage'] = (stats['count'] / total_enrollments * 100).astype(int)
             stats['percentage'] = stats['percentage'].fillna(0)
             course_stats[course_category] = stats[['name', 'count', 'percentage']].to_dict(orient='records')
 
@@ -71,7 +71,7 @@ class EnrollmentTrends(APIView):
             .size().reset_index(name='count')
             .rename(columns={'branch': 'name'})
         )
-        branch_stats['percentage'] = branch_stats['count'] / total_enrollments * 100
+        branch_stats['percentage'] = (branch_stats['count'] / total_enrollments * 100).astype(int)
         branch_stats = branch_stats[['name', 'count', 'percentage']].to_dict(orient='records')
 
         return Response({

@@ -1,4 +1,4 @@
-from .analytics import EnrollmentTrends, SessionTrends, ResourceStats, ClassroomUtilization, InstructorUtilization, VehicleUtilization, ScheduleRecommendation, TdcScheduleList, TdcScheduleMatch
+from .analytics import EnrollmentTrends, MonthlyAndDailyStats, SessionTrends, ResourceStats, ClassroomUtilization, InstructorUtilization, VehicleUtilization, ScheduleRecommendation, TdcScheduleList, TdcScheduleMatch
 from .branch import BranchList, BranchDetail, ValidBranchList
 from .classroom import ClassroomList, ClassroomDetail
 from .course_category import CourseCategoryList, CourseCategoryDetail

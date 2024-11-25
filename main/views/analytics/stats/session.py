@@ -6,7 +6,7 @@ from datetime import datetime
 from ....models import Session
 
 
-class SessionTrends(APIView):
+class MonthlyAndDailyStats(APIView):
     def get(self, request):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -33,9 +33,6 @@ class SessionTrends(APIView):
         df_sessions['session_date'] = pd.to_datetime(df_sessions['session_date'])
         df_sessions['start_time'] = pd.to_datetime(df_sessions['start_time'], format='%H:%M:%S').dt.time
 
-        # COUNT OF UPCOMING SESSIONS
-        scheduled_count = df_sessions[df_sessions['status'] == 'Scheduled'].shape[0]
-
         # TOTAL NUMBER OF SESSIONS FOR PERCENTAGE CALCULATION
         total_sessions = df_sessions.shape[0]
 
@@ -43,11 +40,6 @@ class SessionTrends(APIView):
             return Response({
                 'monthlyStats': [],
                 'dailyStats': {},
-                'timeRangeStats': {},
-                'timePeriodStats': [],
-                'statusStats': [],
-                'courseCategoryStats': {},
-                'scheduledCount': scheduled_count,
             })
 
         # MONTHLY STATS
@@ -69,6 +61,51 @@ class SessionTrends(APIView):
         for month, stats in daily_stats.items():
             stats['percentage'] = (stats['count'] / total_sessions * 100).round(0).astype(int)
             daily_stats[month] = stats[['day', 'count', 'percentage']].to_dict(orient='records')
+
+        return Response({
+            'monthlyStats': monthly_stats,
+            'dailyStats': daily_stats,
+        })
+
+class SessionTrends(APIView):
+    def get(self, request):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        branch = request.query_params.get('branch')
+
+        # SET DEFAULT START DATE IF NOT PROVIDED
+        if not start_date:
+            start_date = datetime(datetime.now().year, datetime.now().month, 1)
+        else:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        
+        # LOAD DATA INTO A DATAFRAME
+        sessions = Session.objects.exclude(status__in=['Archived', 'Cancelled'])
+        
+        # FILTER SESSIONS BASED ON BRANCH AND DATE RANGE
+        sessions = sessions.filter(session_date__gte=start_date)
+        if end_date:
+            sessions = sessions.filter(session_date__lte=end_date)
+        if branch:
+            sessions = sessions.filter(enrollment__branch=branch)
+
+        # CONVERT DATA TO DATAFRAME
+        df_sessions = read_frame(sessions, fieldnames=['session_date', 'start_time', 'status', 'enrollment__course__course_category__category_code'])
+
+        # FORMAT COLUMNS
+        df_sessions['session_date'] = pd.to_datetime(df_sessions['session_date'])
+        df_sessions['start_time'] = pd.to_datetime(df_sessions['start_time'], format='%H:%M:%S').dt.time
+
+        # TOTAL NUMBER OF SESSIONS FOR PERCENTAGE CALCULATION
+        total_sessions = df_sessions.shape[0]
+
+        if total_sessions == 0:
+            return Response({
+                'timeRangeStats': {},
+                'timePeriodStats': [],
+                'statusStats': [],
+                'courseCategoryStats': {},
+            })
 
         # CATEGORIZE SESSIONS BY TIME PERIOD
         df_sessions['time_period'] = df_sessions['start_time'].apply(self.categorize_time)
@@ -104,13 +141,10 @@ class SessionTrends(APIView):
             course_category_stats[status] = stats[['name', 'count', 'percentage']].to_dict(orient='records')
 
         return Response({
-            'monthlyStats': monthly_stats,
-            'dailyStats': daily_stats,
             'timeRangeStats': time_range_stats,
             'timePeriodStats': time_period_stats,
             'statusStats': status_stats,
             'courseCategoryStats': course_category_stats,
-            'scheduledCount': scheduled_count,
         })
 
     @staticmethod

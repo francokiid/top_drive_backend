@@ -8,4 +8,4 @@ from .reports.instructor import InstructorUtilization
 from .reports.vehicle import VehicleUtilization
 from .stats.enrollment import EnrollmentTrends
 from .stats.resource import ResourceStats
-from .stats.session import SessionTrends
+from .stats.session import MonthlyAndDailyStats, SessionTrends
