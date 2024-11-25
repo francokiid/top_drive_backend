@@ -48,9 +48,11 @@ def get_vehicle_utilization(branch=None, start_date=None, end_date=None):
 
     # FORMAT RESPONSE DATA
     utilization_data = utilization[['facility_code', 'vehicle_model', 'color', 'transmission_type', 'wheel_num', 'hoursAvailable', 'hoursAssigned', 'utilizationRate', 'branch__branch_name']]
-    utilization_data.loc[:, 'vehicleName'] = utilization_data.apply(
-        lambda row: f"{row['vehicle_model']} {TRANSMISSION_MAP.get(row['transmission_type'], row['transmission_type'])} {row['color']} / {row['branch__branch_name']}",
-        axis=1
+    utilization_data = utilization_data.assign(
+        vehicleName=lambda df: df.apply(
+            lambda row: f"{row['vehicle_model']} {TRANSMISSION_MAP.get(row['transmission_type'], row['transmission_type'])} {row['color']} / {row['branch__branch_name']}",
+            axis=1
+        )
     )
     
     utilization_data = utilization_data.drop(columns=['vehicle_model', 'color', 'branch__branch_name'])

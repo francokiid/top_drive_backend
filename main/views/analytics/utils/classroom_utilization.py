@@ -49,7 +49,8 @@ def get_classroom_utilization(branch=None, start_date=None, end_date=None):
 
     # FORMAT RESPONSE DATA
     utilization_data = utilization[['facility_code', 'capacity', 'hoursAvailable', 'hoursAssigned', 'utilizationRate', 'branch__branch_name']]
-    utilization_data.loc[:, 'classroomName'] = utilization_data.apply(
+    utilization_data = utilization_data.copy()
+    utilization_data['classroomName'] = utilization_data.apply(
         lambda row: f"{row['facility_code']} / {row['branch__branch_name']}",
         axis=1
     )
