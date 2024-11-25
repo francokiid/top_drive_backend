@@ -90,7 +90,10 @@ class SessionTrends(APIView):
             sessions = sessions.filter(enrollment__branch=branch)
 
         # COUNT SCHEDULES WITH "SCHEDULED" STATUS
-        scheduled_count = Session.objects.filter(status='Scheduled').count()
+        if branch:
+            scheduled_count = Session.objects.filter(status='Scheduled', enrollment__branch=branch).count()
+        else:
+            scheduled_count = Session.objects.filter(status='Scheduled').count()
 
         # CONVERT DATA TO DATAFRAME
         df_sessions = read_frame(sessions, fieldnames=['session_date', 'start_time', 'status', 'enrollment__course__course_category__category_code'])
