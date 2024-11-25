@@ -27,7 +27,7 @@ class SessionTrends(APIView):
             sessions = sessions.filter(enrollment__branch=branch)
 
         # CONVERT DATA TO DATAFRAME
-        df_sessions = read_frame(sessions, fieldnames=['session_date', 'start_time', 'status', 'enrollment__course__course_category'])
+        df_sessions = read_frame(sessions, fieldnames=['session_date', 'start_time', 'status', 'enrollment__course__course_category__category_code'])
 
         # FORMAT COLUMNS
         df_sessions['session_date'] = pd.to_datetime(df_sessions['session_date'])
@@ -96,7 +96,7 @@ class SessionTrends(APIView):
         # COURSE CATEGORY STATS GROUPED BY STATUS
         course_category_stats = {
             status: df_sessions[df_sessions['status'] == status]
-            .groupby('enrollment__course__course_category').size().reset_index(name='count').rename(columns={'enrollment__course__course_category': 'name'})
+            .groupby('enrollment__course__course_category__category_code').size().reset_index(name='count').rename(columns={'enrollment__course__course_category__category_code': 'name'})
             for status in df_sessions['status'].unique()
         }
         for status, stats in course_category_stats.items():

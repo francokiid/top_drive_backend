@@ -6,12 +6,12 @@ def calculate_utilization(df_sessions, df_facilities, start_date, end_date):
     df_sessions = df_sessions.drop_duplicates(subset=['facility__object_id', 'session_date', 'start_time', 'end_time'])
 
     # CREATE DATETIME COLUMNS
-    df_sessions['start_datetime'] = pd.to_datetime(df_sessions['session_date'].astype(str) + ' ' + df_sessions['start_time'].astype(str))
-    df_sessions['end_datetime'] = pd.to_datetime(df_sessions['session_date'].astype(str) + ' ' + df_sessions['end_time'].astype(str))
+    df_sessions.loc[:, 'start_datetime'] = pd.to_datetime(df_sessions['session_date'].astype(str) + ' ' + df_sessions['start_time'].astype(str))
+    df_sessions.loc[:, 'end_datetime'] = pd.to_datetime(df_sessions['session_date'].astype(str) + ' ' + df_sessions['end_time'].astype(str))
 
     # SET SESSION DURATION BASED ON COURSE CATEGORY TYPE
-    df_sessions['duration'] = df_sessions['enrollment__course__course_category__category_type'].apply(
-        lambda x: 2.0 if x == 'PDC' else (7.5 if x == 'TDC' else 0)
+    df_sessions.loc[:, 'duration'] = df_sessions['enrollment__course__course_category__category_type'].apply(
+    lambda x: 2.0 if x == 'PDC' else (7.5 if x == 'TDC' else 0)
     )
 
     # AGGREGATE AND CALCULATE TOTAL HOURS ASSIGNED
