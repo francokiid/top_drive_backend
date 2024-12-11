@@ -21,7 +21,7 @@ def get_available_instructors(session_date, start_time, end_time):
         start_time__lt=end_time,
         end_time__gt=start_time,
         status__in=['Completed', 'Scheduled']
-    ).exclude(instructor__status='Archived').values_list('instructor__instructor_code', flat=True)
+    ).values_list('instructor__instructor_code', flat=True)
 
     # GET UTILIZATION DATA FOR THE ENTIRE MONTH
     month_start, month_end = get_month_range(session_date)
@@ -34,29 +34,6 @@ def get_available_instructors(session_date, start_time, end_time):
     ]
 
     return available_instructors
-
-# def get_available_instructors(session_date, start_time, end_time):
-#     # GET BUSY INSTRUCTORS FOR THE GIVEN DATE, TIME, AND BRANCH
-#     busy_instructors = Session.objects.filter(
-#         session_date=session_date,
-#         start_time__lt=end_time,
-#         end_time__gt=start_time,
-#         status__in=['Completed', 'Scheduled']
-#     ).exclude(instructor__status='Archived').values_list('instructor__instructor_code', flat=True)
-
-#     # FORMAT DATE
-#     if isinstance(session_date, str):
-#         session_date = datetime.strptime(session_date, '%Y-%m-%d')
-
-#     # FETCH INSTRUCTOR UTILIZATION DATA BASED ON BRANCH AND DATE
-#     instructor_data = get_instructor_utilization(end_date=session_date)
-
-#     available_instructors = [
-#         instructor for instructor in instructor_data.get('instructors', [])
-#         if instructor['instructorCode'] not in busy_instructors
-#     ]
-
-#     return available_instructors
 
 
 def get_recommended_instructors(category, session_date, start_time, end_time, branch, session_nth, last_session):

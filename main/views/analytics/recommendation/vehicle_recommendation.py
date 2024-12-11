@@ -8,7 +8,8 @@ def get_available_vehicles(session_date, start_time, end_time):
         session_date=session_date,
         start_time__lt=end_time,
         end_time__gt=start_time,
-        facility__facility_type='Vehicle'
+        facility__facility_type='Vehicle',
+        status__in=['Completed', 'Scheduled']
     ).values_list('facility__object_id', flat=True)
 
     busy_vehicles = set(busy_sessions)

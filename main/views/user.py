@@ -19,8 +19,8 @@ class UserList(generics.ListCreateAPIView):
     serializer_class = UserSerializer
     pagination_class = StandardResultsSetPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
-    filterset_fields = ['is_active']
-    search_fields = ['role', 'email', 'first_name', 'last_name', 'branch']
+    filterset_fields = ['role']
+    search_fields = ['role', 'email', 'first_name', 'last_name', 'branch__branch_name']
     ordering_fields = '__all__'
     ordering = 'role'
 

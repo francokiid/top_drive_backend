@@ -17,9 +17,37 @@ class InstructorList(generics.ListCreateAPIView):
     pagination_class = StandardResultsSetPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_fields = ['branch']
-    search_fields = ['instructor_code', 'first_name', 'last_name', 'status']
+    search_fields = ['instructor_code', 'first_name', 'last_name', 'status', 'branch__branch_name']
     ordering_fields = '__all__'
     ordering = 'instructor_code'
+
+    def get_queryset(self):
+        queryset = Instructor.objects.all()
+        date = self.request.query_params.get('date', None)
+        start_time = self.request.query_params.get('start_time', None)
+        end_time = self.request.query_params.get('end_time', None)
+
+        if date and start_time:
+            try:
+                start_datetime = datetime.strptime(f"{date} {start_time}", "%Y-%m-%d %H:%M")
+
+                if end_time:
+                    end_datetime = datetime.strptime(f"{date} {end_time}", "%Y-%m-%d %H:%M")
+                else:
+                    end_datetime = datetime.strptime(f"{date} {end_time}", "%Y-%m-%d %H:%M") if end_time else datetime.strptime(f"{date} 23:59", "%Y-%m-%d %H:%M")
+
+                busy_instructors = Session.objects.filter(
+                    session_date=date,
+                    start_time__lt=end_datetime,
+                    end_time__gt=start_datetime,
+                    status__in=['Completed', 'Scheduled']
+                ).values_list('instructor__instructor_code', flat=True)
+
+                queryset = queryset.exclude(instructor_code__in=list(busy_instructors))
+            except ValueError:
+                pass
+
+        return queryset
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
