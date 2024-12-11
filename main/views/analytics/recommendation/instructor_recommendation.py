@@ -31,8 +31,6 @@ def get_available_instructors(session_date, start_time, end_time):
     # GET UTILIZATION DATA FOR THE ENTIRE MONTH
     month_start, month_end = get_month_range(session_date)
     instructor_data = get_instructor_utilization(start_date=month_start, end_date=month_end)
-    print(month_start)
-    print(month_end)
 
     # FILTER AVAILABLE INSTRUCTORS
     available_instructors = [
@@ -47,7 +45,6 @@ def get_recommended_instructors(category, session_date, start_time, end_time, br
     # GET AVAILABLE INSTRUCTORS FOR THE GIVEN DATE AND TIME
     available_instructors = get_available_instructors(session_date, start_time, end_time)
 
-    print(available_instructors)
     # SEPARATE INSTRUCTORS BY SENIOR AND REGULAR
     senior_instructors = []
     remaining_instructors = []

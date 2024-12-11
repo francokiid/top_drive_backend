@@ -4,6 +4,7 @@ import django_filters
 from rest_framework import filters
 from ..models import Enrollment, Student
 from ..serializers import EnrollmentSerializer
+from ..pagination import LargeResultsSetPagination
 
 
 class EnrollmentFilter(django_filters.FilterSet):
@@ -17,9 +18,12 @@ class EnrollmentFilter(django_filters.FilterSet):
 class EnrollmentList(generics.ListCreateAPIView):
     queryset = Enrollment.objects.exclude(status='Archived')
     serializer_class = EnrollmentSerializer
+    pagination_class = LargeResultsSetPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     filterset_class = EnrollmentFilter
     search_fields = ['enrollment_id', 'status']
+    ordering_fields = '__all__'
+    ordering = 'enrollment_date'
 
 class EnrollmentDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Enrollment.objects.exclude(status='Archived')
