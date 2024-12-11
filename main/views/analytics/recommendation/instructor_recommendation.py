@@ -5,8 +5,13 @@ from ..utils import get_instructor_utilization
 
 def get_month_range(session_date):
     month_start = session_date.replace(day=1)
-    next_month = month_start.replace(month=month_start.month % 12 + 1, day=1)
+
+    if month_start.month == 12:
+        next_month = month_start.replace(year=month_start.year + 1, month=1, day=1)
+    else:
+        next_month = month_start.replace(month=month_start.month + 1, day=1)
     month_end = next_month - timedelta(days=1)
+    
     return month_start, month_end
 
 
@@ -21,11 +26,13 @@ def get_available_instructors(session_date, start_time, end_time):
         start_time__lt=end_time,
         end_time__gt=start_time,
         status__in=['Completed', 'Scheduled']
-    ).values_list('instructor__instructor_code', flat=True)
+    ).exclude(instructor__status='Archived').values_list('instructor__instructor_code', flat=True)
 
     # GET UTILIZATION DATA FOR THE ENTIRE MONTH
     month_start, month_end = get_month_range(session_date)
     instructor_data = get_instructor_utilization(start_date=month_start, end_date=month_end)
+    print(month_start)
+    print(month_end)
 
     # FILTER AVAILABLE INSTRUCTORS
     available_instructors = [
@@ -40,6 +47,7 @@ def get_recommended_instructors(category, session_date, start_time, end_time, br
     # GET AVAILABLE INSTRUCTORS FOR THE GIVEN DATE AND TIME
     available_instructors = get_available_instructors(session_date, start_time, end_time)
 
+    print(available_instructors)
     # SEPARATE INSTRUCTORS BY SENIOR AND REGULAR
     senior_instructors = []
     remaining_instructors = []
