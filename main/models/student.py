@@ -1,9 +1,12 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import RegexValidator
 from random import randint
 from django.utils.timezone import now
 
 class Student(models.Model):
+    PH_PHONE_NUMBER_REGEX = r'^(?:\+63|0)\d{9}$'
+    
     STATUS_CHOICES = [
         ('Active', 'Active'),
         ('Archived', 'Archived')
@@ -12,13 +15,13 @@ class Student(models.Model):
     student_code = models.CharField(max_length=10, primary_key=True, editable=False)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255, null=True, blank=True)
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, 
-        null=True, 
-        blank=True, 
-        on_delete=models.SET_NULL,
-        help_text="Optional: Link to a user account."
-    )
+    address = models.CharField(max_length=255, null=True, blank=True)
+    contact_number = models.CharField(max_length=255, null=True, blank=True, 
+        validators=[RegexValidator(regex=PH_PHONE_NUMBER_REGEX, message="Enter a valid Philippine phone number (e.g., +63917xxxxxxx or 0917xxxxxxx).")])
+    emergency_number = models.CharField(max_length=255, null=True, blank=True, 
+        validators=[RegexValidator(regex=PH_PHONE_NUMBER_REGEX, message="Enter a valid Philippine phone number (e.g., +63917xxxxxxx or 0917xxxxxxx).")])
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        help_text="Optional: Link to a user account.")
     year_joined = models.PositiveIntegerField(default=now().year)
     status = models.CharField(max_length=8, choices=STATUS_CHOICES, default='Active')
 

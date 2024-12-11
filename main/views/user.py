@@ -10,9 +10,13 @@ from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.hashers import make_password
+from django.db import transaction
+from datetime import datetime
 from ..models import Student, User, Instructor
-from ..serializers import UserSerializer
+from ..serializers import UserSerializer, StudentSerializer
 from ..pagination import StandardResultsSetPagination
+import re
 
 
 class UserList(generics.ListCreateAPIView):
@@ -41,6 +45,7 @@ class UserList(generics.ListCreateAPIView):
             queryset = queryset.filter(role=role)
 
         return queryset
+
 
 class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
@@ -76,40 +81,69 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class RegisterView(APIView):
     permission_classes = (permissions.AllowAny, )
 
-    def post(self, request, format=None):
+    def post(self, request):
         data = request.data
         email = data.get('email')
         password = data.get('password')
         re_password = data.get('re_password')
         first_name = data.get('first_name')
         last_name = data.get('last_name')
+        student_code = data.get('student_code')
+        address = data.get('address')
+        contact_number = data.get('contact_number')
+        emergency_number = data.get('emergency_number')
 
-        if not all([email, password, re_password, first_name, last_name]):
-            return Response({'error': 'Missing required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not all([email, password, re_password, first_name, last_name, student_code, address, contact_number, emergency_number]):
+            return JsonResponse({'error': 'Please fill out all required fields.'})
+        phone_regex = re.compile(r'^(09|\+639)\d{9}$')
+        if not phone_regex.match(contact_number):
+            return JsonResponse({'error': 'Invalid contact number format for Philippines.'})
+        if not phone_regex.match(emergency_number):
+            return JsonResponse({'error': 'Invalid emergency number format for Philippines.'})
         if password != re_password:
-            return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': 'Passwords do not match.'})
         if len(password) < 6:
-            return Response({'error': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
-        if User.objects.filter(email=email).exists():
-            return Response({'error': 'Email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': 'Password must be at least 6 characters long.'})
 
         try:
-            user = User.objects.create_user(email=email, password=password, first_name=first_name, last_name=last_name, role='Student')
-            student = Student(
-                student_name=f"{first_name} {last_name}",
-                user=user,
-                year_joined=datetime.now().year,
-                status='Active'
-            )
-            student.save()
-            return Response({'message': 'Student registered successfully.'}, status=status.HTTP_201_CREATED)
-        except ValidationError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'error': 'Email is already in use.'})
+            
+            with transaction.atomic():
+                student = Student.objects.get(student_code=student_code)
+                if student.first_name != first_name or student.last_name != last_name:
+                    return JsonResponse({'error': 'First name or last name does not match student record.'})
+
+                user = User.objects.create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role='Student'
+                )
+
+                student.user = user
+                student.address = address
+                student.contact_number = contact_number
+                student.emergency_number = emergency_number
+                student.year_joined = datetime.now().year
+                student.status = 'Active'
+                student.save()
+
+                serializer = StudentSerializer(student)
+                return JsonResponse({
+                    'success': 'Student account created successfully.', 'student': serializer.data
+                }, status=201)
+
+        except Student.DoesNotExist:
+            return JsonResponse({'error': 'Student record not found.'})
         except Exception as e:
-            return Response({'error': f'Error creating account: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({'error': 'An error occurred while creating the account. Please try again later.'})
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
@@ -117,17 +151,21 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
 
+        if not email or not password:
+            return JsonResponse({'error': 'Email and password are required.'})
+
         user = auth.authenticate(request, email=email, password=password)
         if user is not None:
-            auth.login(request, user)
-            role = user.role
-            can_edit = user.can_edit
-            is_active = user.is_active
-            branch = user.branch.branch_name if user.branch else None
-            print(branch)
-            return Response({'bool': True, 'email': email, 'role': role, 'can_edit': can_edit, 'is_active': is_active, 'branch': branch}, status=status.HTTP_200_OK)
+            if user.is_active:
+                auth.login(request, user)
+                return JsonResponse({
+                    'bool': True, 'email': email, 'role': user.role, 'can_edit': user.can_edit,
+                    'branch': user.branch.branch_name if user.branch else None
+                })
+            else:
+                return JsonResponse({'error': 'User account is inactive.'})
         else:
-            return Response({'bool': False}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({'error': 'Invalid email or password.'})
         
 class LogoutView(APIView):
     def post(self, request, format=None):

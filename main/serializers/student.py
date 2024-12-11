@@ -9,7 +9,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Student
-        fields = ['student_code', 'first_name', 'last_name', 'email', 'is_active', 'year_joined', 'status', 'courses_enrolled']
+        fields = ['student_code', 'first_name', 'last_name', 'address', 'contact_number', 'emergency_number', 'email', 'is_active', 'year_joined', 'status', 'courses_enrolled']
 
     def get_courses_enrolled(self, obj):
         enrollments = Enrollment.objects.filter(student=obj)
